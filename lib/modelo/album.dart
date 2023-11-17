@@ -26,6 +26,18 @@ class Album {
     _anio = 0;
     _gender = Gender.undefined;
 }
+  Album.fromJson(Map<String, dynamic> json)
+    : _titulo = json['titulo'],
+    _artista = json['artista'],
+    _anio = json['anio'],
+    _gender = Gender.values.byName(json['gender']);
+
+  Map<String, dynamic> toJson() => {
+    'titulo': _titulo,
+    'artista': _artista,
+    'anio': _anio,
+    'gender': _gender.name,
+  };
   String get titulo => _titulo;
   String get artista => _artista;
   int get anio => _anio;
