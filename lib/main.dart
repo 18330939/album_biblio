@@ -3,6 +3,13 @@ import 'package:provider/provider.dart';
 import 'modelo/album_biblio.dart';
 import 'views/album_list.dart';
 void main() {
+
+runApp(ChangeNotifierProvider(create: (_) =>
+  AlbumBiblio(),
+  child: const MyApp()
+),);
+
+/*
   AlbumBiblio.leerArchivo().then((albumes) {
     runApp(ChangeNotifierProvider(create: (_) {
         AlbumBiblio albumBiblio =
@@ -14,7 +21,7 @@ void main() {
     ),);
   });
 
-  /*
+
   runApp(ChangeNotifierProvider(create: (_) => AlbumBiblio(),
       child: const MyApp()
     ),

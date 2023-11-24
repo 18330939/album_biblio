@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../modelo/album.dart';
 import '../modelo/album_biblio.dart';
+import '../modelo/manejador_database.dart';
 
 class AlbumLista extends StatefulWidget {
 const AlbumLista({super.key});
@@ -11,21 +12,43 @@ const AlbumLista({super.key});
 State<AlbumLista> createState() => _AlbumListaState();
 }
 class _AlbumListaState extends State<AlbumLista> {
+  bool dbReaded = false;
   int selectedAlbum = 0;
   late AlbumBiblio albumes;
+  late ManejadorDatabase manejadorDB;
+
+  @override
+  void initState() {
+    super.initState();
+    manejadorDB = ManejadorDatabase.getInstance();
+  }
+  @override
+  void dispose() {
+    manejadorDB.cerrarDB();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     albumes = Provider.of<AlbumBiblio>(context);
+    if (!dbReaded) {
+      manejadorDB.albumes().then((value) {
+        albumes.setAlbumes(value);
+        dbReaded = true;
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Biblioteca de Albumes"),
       ),
-      body: (albumes.albumes.isNotEmpty)? ListView(
-        padding: const EdgeInsets.all(10),
-        children: ListTile.divideTiles(context: context,
-        tiles: crearLista(), color:Colors.amber).toList(),
-      )
+      body: !dbReaded? const Center(child: CircularProgressIndicator())
+        : (albumes.albumes.isNotEmpty)? ListView(
+          padding: const EdgeInsets.all(10),
+          children: ListTile.divideTiles(context: context,
+          tiles: crearLista(), color:Colors.amber).toList(),
+          )
       : Padding(
         padding: const EdgeInsets.all(20.0),
         child: Center(
@@ -72,12 +95,38 @@ class _AlbumListaState extends State<AlbumLista> {
   }
   Future<void> capturarAlbum(BuildContext context) async {
     final Album? album = await Navigator.push(context,
-      MaterialPageRoute(
+    MaterialPageRoute(
       builder: (context) => const AlbumForm(),)
     );
     if (album != null) {
-      albumes.addAlbum(album);
+    int id = await manejadorDB.insertarAlbum(album);
+    album.id = id;
+    albumes.addAlbum(album);
     }
+  }
+
+  void mostrarAlbum(BuildContext context, int index) {
+    Navigator.of(context).push(
+    MaterialPageRoute(
+    builder: (context) => AlbumVista(album: albumes.getAlbumByIndex(index),),));
+  }
+
+  Future<void> actualizarAlbum(BuildContext context, int index,) async {
+    Album? album = await Navigator.push(context,
+      MaterialPageRoute(
+      builder: (context) => AlbumForm(album: albumes.getAlbumByIndex(index)),)
+    );
+    if(album != null){
+      albumes.updateAlbum(index, album);
+      manejadorDB.actualizarAlbum(album);
+    }
+  }
+
+  bool removerAlbum(int index) {
+    Album album = albumes.getAlbumByIndex(index);
+    var eliminado = albumes.removeAlbum(index);
+    manejadorDB.removerAlbum(album.id!);
+    return eliminado;
   }
 }
 
